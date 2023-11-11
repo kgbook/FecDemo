@@ -1,0 +1,6 @@
+clear_local_var()
+set(local_module local_stream)
+aux_source_directory(. local_source)
+set(local_dependency utils SpdlogHelper)
+set(local_export_header ${CMAKE_CURRENT_LIST_DIR})
+build_shared_library()

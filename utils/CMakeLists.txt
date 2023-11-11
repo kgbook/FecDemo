@@ -1,0 +1,6 @@
+clear_local_var()
+set(local_module utils)
+append_source(thread time base)
+set(local_export_header thread time base)
+set(local_dependency SpdlogHelper)
+build_shared_library()

@@ -1,0 +1,9 @@
+[submodule "third_party/OpenFEC"]
+	path = third_party/OpenFEC
+	url = https://github.com/OpenFEC/OpenFEC.git
+[submodule "third_party/SpdlogHelper"]
+	path = third_party/SpdlogHelper
+	url = https://github.com/kgbook/SpdlogHelper.git
+[submodule "third_party/fecal"]
+	path = third_party/fecal
+	url = https://github.com/catid/fecal.git

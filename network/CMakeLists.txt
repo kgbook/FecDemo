@@ -1,0 +1,7 @@
+clear_local_var()
+set(local_module network)
+aux_source_directory(. local_source)
+append_source(udp tcp)
+set(local_export_header ${CMAKE_CURRENT_SOURCE_DIR})
+set(local_dependency utils SpdlogHelper)
+build_static_library()
