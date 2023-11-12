@@ -8,7 +8,7 @@ class LocalStreamReader;
 
 class VideoSenderFlow : public WorkFlow {
 public:
-    VideoSenderFlow(std::string clientIP, int16_t port, std::string proto);
+    VideoSenderFlow(std::string ip, int16_t port, std::string proto);
     ~VideoSenderFlow() override;
 
     void build() override;
@@ -17,7 +17,7 @@ public:
     void release() override;
 
 private:
-    std::string clientIP_;
+    std::string ip_;
     std::string proto_;
     int16_t port_;
     BaseModule *sender_;

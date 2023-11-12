@@ -21,10 +21,6 @@
 #define NETWORK_INIT_FRAME_SEQ_NO 0
 #endif
 
-#ifndef SERVER_PORT
-#define SERVER_PORT 10086
-#endif
-
 struct UdpPacketTail {
     uint32_t packet_seq;
     uint32_t frame_seq;
