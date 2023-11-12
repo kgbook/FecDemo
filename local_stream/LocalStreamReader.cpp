@@ -8,7 +8,7 @@
 #include "LocalStreamReader.h"
 
 #define LOG_TAG "LocalStreamReader"
-#define BUFFER_SIZE  (1024*1024)
+#define BUFFER_SIZE  (64*1024)
 
 LocalStreamReader::LocalStreamReader(const std::string& path) : BaseModule(LOG_TAG), Thread(LOG_TAG) {
     ALOGD("open file %s", path.c_str());
@@ -36,6 +36,9 @@ bool LocalStreamReader::threadLoop() {
     size_t nRead = fread(buffer_, 1, BUFFER_SIZE, inputFile_);
     if(nRead <= 0) {
         output(nullptr, 0, nullptr);
+        if (feof(inputFile_)) {
+            ALOGI("EOF, exit now...");
+        }
         return false;
     }
     output(buffer_, nRead, nullptr);

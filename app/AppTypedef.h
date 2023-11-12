@@ -5,7 +5,7 @@
 #ifndef FEC_APPTYPEDEF_H
 #define FEC_APPTYPEDEF_H
 
-#define SERVER_PORT  1024
+#define SERVER_PORT  10086
 #define SERVER_IP   "127.0.0.1"
 #define NETWORK_PROTO  "udp"
 

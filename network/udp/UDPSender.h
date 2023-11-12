@@ -21,6 +21,8 @@ private:
 private:
     int socket_;
     uint32_t frame_seq_;
+    struct sockaddr_in serverSocketAddr_{};
+    volatile bool init_;
 };
 
 

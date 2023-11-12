@@ -19,14 +19,15 @@ UDPReceiver::UDPReceiver(const std::string&  serverIP, uint16_t serverPort)
     bzero(&serverAddr, sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(serverPort);
-    if (inet_pton(AF_INET, serverIP.c_str(), &serverAddr.sin_addr) != 1)
-    {
-        ALOGE("inet_pton failed!");
-        return ;
+    serverAddr.sin_addr.s_addr = htons(INADDR_ANY);
+    if (bind(socket_, (struct sockaddr *) &serverAddr, sizeof(serverAddr)) < 0) {
+        ALOGE("bind socket error:%s", strerror(errno));
+        return;
     }
     for (auto & bufItem : framebuf_) {
         bufItem = new UdpFrameBuf(UDP_MAX_FRAME_BUFFER_SIZE);
     }
+    ALOGD("init recv socket ok!");
 }
 
 UDPReceiver::~UDPReceiver() {
@@ -39,6 +40,7 @@ UDPReceiver::~UDPReceiver() {
 
 bool UDPReceiver::recvFrame(int socket) {
     if (socket < 0) {
+        ALOGE("create socket first please!");
         return false;
     }
     int32_t bufNum = sizeof(framebuf_) / sizeof(framebuf_[0]);
@@ -59,7 +61,7 @@ bool UDPReceiver::recvFrame(int socket) {
         ALOGW("recvfrom failed, seq:%d, recvByte:%u, reason:%s", curBuf->seq(), curBuf->size(), strerror(errno));
         goto output;
     }
-    packetlen = rc -  sizeof(UdpPacketTail);
+    packetlen = rc -  NETWORK_UDP_PACKET_TAIL_SIZE;
     curTail = (UdpPacketTail *)(curBuf->buf() + packetlen);
     if (curBuf->seq() != curTail->frame_seq) { // next packet
         ALOGV("new frame, seq: %d ---< %u, packetseq:%u, packetnum:%u, nextByte:%d", curTail->frame_seq, curBuf->seq(), curTail->packet_seq, curTail->total_packets, packetlen);
@@ -73,7 +75,7 @@ bool UDPReceiver::recvFrame(int socket) {
     if (curBuf->seq() == NETWORK_INIT_PACKET_SEQ_NO) {
         curBuf->packetNum() = curTail->total_packets;
     }
-    ALOGV("seq:%u, collected:%u, total:%u, curTotalByte:%u, curByte:%d, curBufIndex_:%d", curBuf->seq(), curBuf->collected(), curBuf->packetNum(), curBuf->size(), packetlen, curBufIndex_);
+    ALOGV("seq:%u, consume:%d, collected:%u, total:%u, curTotalByte:%u, curByte:%d, curBufIndex_:%d", curBuf->seq(), curBuf->consume(), curBuf->collected(), curBuf->packetNum(), curBuf->size(), packetlen, curBufIndex_);
 
 output:
     if (curBuf->consume()) {
@@ -88,7 +90,8 @@ bool UDPReceiver::threadLoop() {
     if (!waitReadReady(socket_)) {
         return true;
     }
-    return recvFrame(socket_);
+    recvFrame(socket_);
+    return true;
 }
 
 bool UDPReceiver::waitReadReady(int socket) {
