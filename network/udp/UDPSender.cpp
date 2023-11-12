@@ -7,7 +7,7 @@
 #define LOG_TAG "UDPSender"
 
 UDPSender::UDPSender(const std::string&  serverIP, uint16_t serverPort)
-    : BaseModule(LOG_TAG), frame_seq_(NETWORK_INIT_FRAME_SEQ_NO), init_(false) {
+    : BaseModule(LOG_TAG), frame_seq_(NETWORK_INIT_FRAME_SEQ_NO), packet_seq_(NETWORK_INIT_PACKET_SEQ_NO), init_(false) {
     socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (socket_ < 0) {
         ALOGE("create socket failed, fd:%d", socket_);
@@ -53,7 +53,10 @@ void UDPSender::input(uint8_t *data, size_t len, uint8_t *privateData) {
         memcpy(&sndbuf[0], (const void *)visitor, payloadLen);
         visitor += payloadLen;
         auto *tail = (UdpPacketTail *) &sndbuf[payloadLen];
-        tail->packet_seq = i;
+        tail->packet_seq = packet_seq_++;
+        if (packet_seq_ >= UINT32_MAX) {
+            packet_seq_ = NETWORK_INIT_PACKET_SEQ_NO;
+        }
         tail->frame_seq = frame_seq_;
         tail->total_packets = packetnum;
         if (frame_seq_ >= UINT32_MAX) {
