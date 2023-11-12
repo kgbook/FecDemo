@@ -8,23 +8,25 @@
 #include "BaseReceiver.h"
 #include "NetworkTypedef.h"
 
+class UdpFrameBuf;
+
+// udp client
 class UDPReceiver : public BaseReceiver {
 public:
-    explicit UDPReceiver(uint16_t port);
+    UDPReceiver(const std::string&  serverIP, uint16_t serverPort);
     ~UDPReceiver() override;
 
 protected:
     bool threadLoop() override;
 
 private:
-    uint16_t port_;
-    int socket_ = 0;
-    struct sockaddr_in mySocketAddr_{};
-    struct sockaddr_in peerSocketAddr_{};
-    socklen_t socketLen_;
-    uint8_t *recvBuffer_;
-    char packet_[MAX_UDP_PAYLOAD]{};
-    std::map<int, std::vector<char>> packets_;
+    bool recvFrame(int socket);
+    bool waitReadReady(int socket);
+
+private:
+    int socket_;
+    UdpFrameBuf *framebuf_[2]{};
+    int32_t curBufIndex_;
 };
 
 

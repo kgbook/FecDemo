@@ -7,23 +7,20 @@
 #include "BaseModule.h"
 #include "NetworkTypedef.h"
 
+// udp server
 class UDPSender : public BaseModule {
 public:
-    UDPSender(std::string clientIP, uint16_t port);
+    UDPSender(const std::string&  serverIP, uint16_t serverPort);
     ~UDPSender() override;
     void input(uint8_t *data, size_t len, uint8_t *privateData) override;
 
 private:
-    int wait_send(const char* data, int len);
+    int sendMsg(const char* data, size_t len);
+    bool waitWriteReady(int socket);
 
 private:
-    std::string clientIP_;
-    uint16_t port_;
-    int socket_ = 0;
-    struct sockaddr_in mySocketAddr_;
-    struct sockaddr_in peerSocketAddr_;
-    socklen_t socketLen_;
-    char packet_[MAX_UDP_PAYLOAD]{};
+    int socket_;
+    uint32_t frame_seq_;
 };
 
 

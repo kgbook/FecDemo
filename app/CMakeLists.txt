@@ -1,11 +1,11 @@
 clear_local_var()
 set(local_module receiver)
 set(local_source receiver.cpp)
-set(local_dependency network)
+set(local_dependency workflow)
 build_executable()
 
 clear_local_var()
 set(local_module sender)
 set(local_source sender.cpp)
-set(local_dependency network)
+set(local_dependency workflow)
 build_executable()

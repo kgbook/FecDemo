@@ -1,74 +1,110 @@
 #include <unistd.h>
-#include <map>
 #include <cstring>
 #include "UDPReceiver.h"
 #include "NetworkTypedef.h"
+#include "UdpFrameBuf.h"
 #include "ALog.h"
 
 #define LOG_TAG "UDPReceiver"
+#define UDP_MAX_FRAME_BUFFER_SIZE (1024*1024)
 
-constexpr int BUFFER_SIZE = 1024 * 1024;
-
-UDPReceiver::UDPReceiver(uint16_t port) : BaseReceiver("UDPReceiver"), port_(port) {
-    socketLen_ = sizeof(mySocketAddr_);
+UDPReceiver::UDPReceiver(const std::string&  serverIP, uint16_t serverPort)
+    : BaseReceiver(LOG_TAG), curBufIndex_(0) {
     socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    memset(&mySocketAddr_, 0, sizeof(mySocketAddr_));
-    mySocketAddr_.sin_family = AF_INET;
-    mySocketAddr_.sin_port = htons(port_);
-    mySocketAddr_.sin_addr.s_addr = htonl(INADDR_ANY);
-    //bind socket to port
-    if (bind(socket_, (struct sockaddr *) &mySocketAddr_, socketLen_) < 0) {
-        LOGE(LOG_TAG, "bind failed!");
+    if (socket_ < 0) {
+        ALOGE("create socket failed, fd:%d", socket_);
+        return ;
     }
-
-    recvBuffer_ = static_cast<uint8_t *>(malloc(BUFFER_SIZE));
+    struct sockaddr_in serverAddr{};
+    bzero(&serverAddr, sizeof(serverAddr));
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(serverPort);
+    if (inet_pton(AF_INET, serverIP.c_str(), &serverAddr.sin_addr) != 1)
+    {
+        ALOGE("inet_pton failed!");
+        return ;
+    }
+    for (auto & bufItem : framebuf_) {
+        bufItem = new UdpFrameBuf(UDP_MAX_FRAME_BUFFER_SIZE);
+    }
 }
 
 UDPReceiver::~UDPReceiver() {
     close(socket_);
+    for (auto & bufItem : framebuf_) {
+        delete bufItem;
+        bufItem = nullptr;
+    }
+}
+
+bool UDPReceiver::recvFrame(int socket) {
+    if (socket < 0) {
+        return false;
+    }
+    int32_t bufNum = sizeof(framebuf_) / sizeof(framebuf_[0]);
+    UdpFrameBuf *curBuf = framebuf_[curBufIndex_];
+    UdpPacketTail *curTail;
+    ssize_t rc, packetlen;
+    struct sockaddr_in peerAddr{};
+    socklen_t addrLen = sizeof(peerAddr);
+
+    if (curBuf->buflen() < NETWORK_MAX_UDP_PAYLOAD_SIZE) {
+        curBuf->print(LOG_TAG);
+        ALOGW("OOM, buf is not big enough, remain:%d, need:%d", curBuf->buflen(), NETWORK_MAX_UDP_PAYLOAD_SIZE);
+        goto output;
+    }
+    rc = recvfrom(socket, curBuf->buf(), curBuf->buflen(), 0, (struct sockaddr*)&peerAddr, &addrLen);
+    if (rc < 0)
+    {
+        ALOGW("recvfrom failed, seq:%d, recvByte:%u, reason:%s", curBuf->seq(), curBuf->size(), strerror(errno));
+        goto output;
+    }
+    packetlen = rc -  sizeof(UdpPacketTail);
+    curTail = (UdpPacketTail *)(curBuf->buf() + packetlen);
+    if (curBuf->seq() != curTail->frame_seq) { // next packet
+        ALOGV("new frame, seq: %d ---< %u, packetseq:%u, packetnum:%u, nextByte:%d", curTail->frame_seq, curBuf->seq(), curTail->packet_seq, curTail->total_packets, packetlen);
+        int32_t nextBufIndex = (curBufIndex_ + 1) % bufNum;
+        UdpFrameBuf *nextBuf = framebuf_[nextBufIndex];
+        nextBuf->copy(curTail->frame_seq, curTail->total_packets, curBuf->buf(), packetlen);
+        curBufIndex_ = nextBufIndex;
+        goto output;
+    }
+    curBuf->setOffset(packetlen);
+    if (curBuf->seq() == NETWORK_INIT_PACKET_SEQ_NO) {
+        curBuf->packetNum() = curTail->total_packets;
+    }
+    ALOGV("seq:%u, collected:%u, total:%u, curTotalByte:%u, curByte:%d, curBufIndex_:%d", curBuf->seq(), curBuf->collected(), curBuf->packetNum(), curBuf->size(), packetlen, curBufIndex_);
+
+output:
+    if (curBuf->consume()) {
+        output((uint8_t *)curBuf->base(), curBuf->size(), nullptr);
+        curBuf->clear();
+        return true;
+    }
+    return false;
 }
 
 bool UDPReceiver::threadLoop() {
-    socklen_t addr_len = sizeof(peerSocketAddr_);
-    int total_packets = 0;
-    int total_received = 0;
-    packets_.clear();
-
-    while (true) {
-        int received = recvfrom(socket_, packet_, MAX_UDP_PAYLOAD, 0, (struct sockaddr*)&peerSocketAddr_, &addr_len);
-        if (received <= UDP_PACKET_HEADER_SIZE) {
-            break;  // error or connection closed
-        }
-        auto* header = (UdpPacketHeader*)packet_;
-        total_packets = header->total_packets;
-        int data_len = received - UDP_PACKET_HEADER_SIZE;
-        packets_[header->seq] = std::vector<char>(packet_ + UDP_PACKET_HEADER_SIZE, packet_ + UDP_PACKET_HEADER_SIZE + data_len);
-        if (header->seq == total_packets - 1) {
-            break;  // received all packets
-        }
+    if (!waitReadReady(socket_)) {
+        return true;
     }
-
-    int count = 0;
-    int last_packet_num = -1;
-    for (const auto& p : packets_) {
-        if (count >= total_packets) {
-            break;  // Stop after total_packets elements
-        }
-
-        if (total_received + p.second.size() > BUFFER_SIZE) {
-            break;  // Not enough space in buffer, stop receiving
-        }
-        LOGD(LOG_TAG, "packet num = %d", p.first);
-        if (p.first != last_packet_num + 1) {
-            LOGD(LOG_TAG, "lost packet, num = %d", last_packet_num + 1);
-        }
-        last_packet_num = p.first;
-
-        memcpy(recvBuffer_ + total_received, p.second.data(), p.second.size());
-        total_received += p.second.size();
-        count++;
-    }
-    LOGD(LOG_TAG, "total_packets = %d, total_received_packets = %d", total_packets, count);
-    output(recvBuffer_, total_received, nullptr);
-    return true;
+    return recvFrame(socket_);
 }
+
+bool UDPReceiver::waitReadReady(int socket) {
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(socket, &readfds);
+
+    struct timeval timeout{};
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+
+    int ready = select(socket + 1, &readfds, nullptr, nullptr, &timeout);
+    if (ready < 0) {
+        LOGD(LOG_TAG, "select error.");
+        return false;
+    }
+    return FD_ISSET(socket_, &readfds);
+}
+
