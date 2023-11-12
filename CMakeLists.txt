@@ -9,6 +9,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -fPIC)
 
+include_directories(include)
+
 set(modules app workflow local_stream network fec utils third_party)
 foreach(item ${modules})
     add_subdirectory(${item})

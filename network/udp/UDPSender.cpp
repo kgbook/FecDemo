@@ -1,7 +1,6 @@
 #include <unistd.h>
 #include <cstring>
 #include "UDPSender.h"
-#include "NetworkTypedef.h"
 #include "ALog.h"
 
 #define LOG_TAG "UDPSender"

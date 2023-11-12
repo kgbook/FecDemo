@@ -6,6 +6,7 @@
 #define FEC_NETWORKTYPEDEF_H
 
 #include <cstdint>
+#include <cstddef>
 
 #define NETWORK_MTU 1500
 #define NETWORK_IPV4_HEADER_SIZE 20

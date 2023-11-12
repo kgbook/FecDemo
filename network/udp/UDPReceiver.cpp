@@ -1,7 +1,6 @@
 #include <unistd.h>
 #include <cstring>
 #include "UDPReceiver.h"
-#include "NetworkTypedef.h"
 #include "UdpFrameBuf.h"
 #include "ALog.h"
 
