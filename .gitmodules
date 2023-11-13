@@ -1,6 +1,6 @@
 [submodule "third_party/OpenFEC"]
 	path = third_party/OpenFEC
-	url = https://github.com/OpenFEC/OpenFEC.git
+	url = https://github.com/kgbook/OpenFEC.git
 [submodule "third_party/SpdlogHelper"]
 	path = third_party/SpdlogHelper
 	url = https://github.com/kgbook/SpdlogHelper.git
