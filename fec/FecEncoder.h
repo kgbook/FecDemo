@@ -10,15 +10,14 @@
 
 class OpenFecEncoder;
 
-class FecEncoder : public BaseModule {
+class FecEncoder {
 public:
     FecEncoder(FecAlgorithm type, const FecParameter &param);
-    ~FecEncoder() override;
+    ~FecEncoder();
 
-    void input(uint8_t *data, size_t len, uint8_t *privateData) override;
+    bool encode(uint8_t *buf, size_t len);
 
 private:
-    bool encode(uint8_t *buf, size_t len);
     bool initEncoder(FecAlgorithm type, const FecParameter &param);
 
 private:

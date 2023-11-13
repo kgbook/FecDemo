@@ -13,7 +13,7 @@
 
 
 FecEncoder::FecEncoder(FecAlgorithm type, const FecParameter &param)
-    : BaseModule(LOG_TAG), open_fec_encoder(nullptr), type_(type) {
+    : open_fec_encoder(nullptr), type_(type) {
     if (!initEncoder(type, param)) {
         ALOGE("initEncoder failed!");
         return;
@@ -66,11 +66,4 @@ bool FecEncoder::encode(uint8_t *buf, size_t len) {
     }
     }
     return true;
-}
-
-void FecEncoder::input(uint8_t* data, size_t len, uint8_t* privateData)
-{
-    encode(data, len);
-    // FIXME: get FEC packet ???
-//    open_fec_encoder->getPacket()
 }
