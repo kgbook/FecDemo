@@ -5,12 +5,14 @@
 #ifndef FEC_FECFACTORY_H
 #define FEC_FECFACTORY_H
 
-#include "BaseModule.h"
-#include "BaseReceiver.h"
+#include "FecTypedef.h"
+
+class BaseModule;
+class BaseReceiver;
 
 class FecFactory {
 public:
-    BaseModule* createEncoder();
+    BaseModule* createEncoder(FecAlgorithm type, const FecParameter &param);
     BaseReceiver* createDecoder();
 };
 

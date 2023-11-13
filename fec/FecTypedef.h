@@ -14,7 +14,7 @@ enum class FecAlgorithm {
 };
 
 union FecParameter {
-    struct {
+    struct OpenFEC {
         uint32_t codec_id;
         uint32_t k;
         uint32_t n;

@@ -3,6 +3,8 @@ project(FecDemo)
 
 include(cmake/module_define.cmake)
 
+option(ENABLE_OPENFEC "enable OpenFEC or not?" ON)
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

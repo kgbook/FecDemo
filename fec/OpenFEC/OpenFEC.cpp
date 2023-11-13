@@ -18,24 +18,15 @@ OpenFEC::OpenFEC(FecAlgorithm type, const FecParameter &param)
         ALOGE("init fec failed!");
         return;
     }
-    if (((recvd_symbols_tab_ = (void**) calloc(param.openfec.n, sizeof(void*))) == nullptr) ||
-        ((src_symbols_tab_ = (void**) calloc(param.openfec.n, sizeof(void*))) == nullptr))
-    {
-        ALOGE("OOM, calloc failed for enc_symbols_tab, n=%u", param.openfec.n);
-        return;
-    }
 }
 
 OpenFEC::~OpenFEC() {
-
-}
-
-bool OpenFEC::encode(uint8_t *buf, int32_t len) {
-    return false;
-}
-
-bool OpenFEC::decode(uint8_t *buf, int32_t len) {
-    return false;
+    if (nullptr != session_) {
+        of_release_codec_instance(session_);
+    }
+    if (nullptr != params_) {
+        free(params_);
+    }
 }
 
 bool OpenFEC::init(FecAlgorithm type, const FecParameter &param) {
@@ -43,23 +34,31 @@ bool OpenFEC::init(FecAlgorithm type, const FecParameter &param) {
     switch (type) {
         case FecAlgorithm::kReedSolomonGF2M: {
             of_rs_2_m_parameters_t	*rs_params;
-            if ((rs_params = (of_rs_2_m_parameters_t *)calloc(1, sizeof(*rs_params))) == NULL)
-            {
+            codecId = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
+            if ((rs_params = (of_rs_2_m_parameters_t *)calloc(1, sizeof(*rs_params))) == NULL) {
                 ALOGE("no memory for codec %d", static_cast<int>(type));
-                break;
+                return false;
             }
             rs_params->m = 8;
             params_ = (of_parameters_t *) rs_params;
+            break;
+        }
+        case FecAlgorithm::kLdpcStaircase: {
+            of_ldpc_parameters_t *ldpc_params;
+            codecId = OF_CODEC_LDPC_STAIRCASE_STABLE;
+            if ((ldpc_params = (of_ldpc_parameters_t *)calloc(1, sizeof(* ldpc_params))) == NULL) {
+                ALOGE("no memory for codec %d", codecId);
+                return false;
+            }
+            ldpc_params->prng_seed	= rand();
+            ldpc_params->N1		= 7;
+            params_ = (of_parameters_t *) ldpc_params;
             break;
         }
         default: {
             ALOGE("%d type not support yet!", static_cast<int32_t>(type));
             return false;
         }
-    }
-    if (nullptr == params_) {
-        ALOGE("params_ nullptr!");
-        return false;
     }
     params_->nb_source_symbols	= param.openfec.k;		/* fill in the generic part of the of_parameters_t structure */
     params_->nb_repair_symbols	= param.openfec.n - param.openfec.k;

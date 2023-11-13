@@ -8,20 +8,22 @@
 #include "BaseModule.h"
 #include "FecTypedef.h"
 
-class OpenFEC;
+class OpenFecEncoder;
 
-class FecEncoder : BaseModule {
+class FecEncoder : public BaseModule {
 public:
-    FecEncoder(std::string name, FecAlgorithm type, const FecParameter &param);
+    FecEncoder(FecAlgorithm type, const FecParameter &param);
     ~FecEncoder() override;
 
-    bool encode(uint8_t *buf, size_t len);
+    void input(uint8_t *data, size_t len, uint8_t *privateData) override;
 
 private:
+    bool encode(uint8_t *buf, size_t len);
     bool initEncoder(FecAlgorithm type, const FecParameter &param);
 
 private:
-    OpenFEC *openFec;
+    OpenFecEncoder *open_fec_encoder;
+    FecAlgorithm type_;
 };
 
 

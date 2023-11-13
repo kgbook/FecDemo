@@ -16,18 +16,13 @@ public:
     OpenFEC(FecAlgorithm type, const FecParameter &param);
     ~OpenFEC();
 
-    bool encode(uint8_t *buf, int32_t len);
-    bool decode(uint8_t *buf, int32_t len);
-
 private:
     bool init(FecAlgorithm type, const FecParameter &param);
 
-private:
+protected:
     FecAlgorithm type_;
     of_session *session_;
     of_parameters *params_;
-    void **recvd_symbols_tab_;
-    void **src_symbols_tab_;
 };
 
 
