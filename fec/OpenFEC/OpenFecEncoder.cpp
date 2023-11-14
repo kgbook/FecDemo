@@ -48,7 +48,7 @@ bool OpenFecEncoder::getPacket(uint8_t **buf, uint32_t &len)
 bool OpenFecEncoder::encode(uint8_t* buf, uint32_t len)
 {
     uint32_t cache_id = raw_packet_count_ % params_->nb_source_symbols;
-    bool should_build_fec_packet = (raw_packet_count_ != 0 && cache_id == 0) ? true : false;
+    bool should_build_fec_packet = (raw_packet_count_ != 0 && cache_id == 0);
     packet_count_++;
     raw_packet_count_++;
     cache_->copy(cache_id, buf, len);
